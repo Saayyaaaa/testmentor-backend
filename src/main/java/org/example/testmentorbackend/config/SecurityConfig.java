@@ -26,6 +26,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableMethodSecurity
 public class SecurityConfig {
 
+
+//    /api/auth/signing
     @Bean
     public DaoAuthenticationProvider authenticationProvider(
             UserDetailsService userDetailsService,
@@ -64,6 +66,9 @@ public class SecurityConfig {
                 )
                 .build();
     }
+
+    //Если нет токена/не залогинен → 401
+    //Если залогинен, но нет прав → 403
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {

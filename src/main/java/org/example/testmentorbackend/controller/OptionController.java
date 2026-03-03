@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/options")
-@CrossOrigin("*")
+//@CrossOrigin("*")
 public class OptionController {
 
     private final OptionService optionService;
@@ -26,9 +26,9 @@ public class OptionController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MENTOR')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','MENTOR')")
     public ResponseEntity<Options> add(@RequestBody OptionDto optionDto) {
-        if (optionDto == null || optionDto.getQuestionId() == null) {
+        if (optionDto.getOptionText() == null || optionDto.getOptionText().isBlank()) {
             return ResponseEntity.badRequest().build();
         }
 
@@ -36,7 +36,6 @@ public class OptionController {
 
         Options option = new Options();
         option.setOptionText(optionDto.getOptionText());
-        // Lombok generates setCorrect(boolean) for field named "isCorrect"
         option.setCorrect(optionDto.isIsCorrect());
         option.setQuestions(q);
 

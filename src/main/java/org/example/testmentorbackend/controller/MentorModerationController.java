@@ -15,7 +15,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/mentor")
-@CrossOrigin("*")
+//@CrossOrigin("*")
 public class MentorModerationController {
 
     private final QuizzesService quizzesService;
@@ -28,13 +28,13 @@ public class MentorModerationController {
     }
 
     @GetMapping("/review")
-    @PreAuthorize("hasAuthority('ROLE_MENTOR')")
+    @PreAuthorize("hasAuthority('MENTOR')")
     public ResponseEntity<List<MentorReviewQuizDto>> pending(Authentication authentication) {
         return ResponseEntity.ok(quizzesService.getPendingQuizzesForMentorsWithMyVote(authentication.getName()));
     }
 
     @PostMapping("/review/{quizId}/vote")
-    @PreAuthorize("hasAuthority('ROLE_MENTOR')")
+    @PreAuthorize("hasAuthority('MENTOR')")
     public ResponseEntity<Vote> vote(@PathVariable Long quizId,
                                      @RequestBody VoteRequestDto voteRequest,
                                      Authentication authentication) {

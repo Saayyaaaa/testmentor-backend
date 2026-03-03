@@ -11,7 +11,8 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/attempts")
-@CrossOrigin("*")
+//@CrossOrigin("*")
+
 public class UserAttemptController {
 
     private final UserAttemptService userAttemptService;

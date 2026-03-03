@@ -10,12 +10,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * Endpoints for creating questions (used by Postman/manual seeding).
- */
 @RestController
 @RequestMapping("/api/questions")
-@CrossOrigin("*")
+//@CrossOrigin("*")
 public class QuestionController {
 
     private final QuestionService questionService;
@@ -27,9 +24,9 @@ public class QuestionController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MENTOR')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','MENTOR')")
     public ResponseEntity<Questions> add(@RequestBody QuestionDto dto) {
-        if (dto == null || dto.getQuizId() == null) {
+        if (dto.getQuestionText() == null || dto.getQuestionText().isBlank()) {
             return ResponseEntity.badRequest().build();
         }
 

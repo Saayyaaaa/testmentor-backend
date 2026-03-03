@@ -27,4 +27,9 @@ public class GlobalException {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(new ErrorResponseDto(HttpStatus.FORBIDDEN.value(), ex.getMessage()));
     }
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponseDto> handleGeneric(Exception ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponseDto(500, "Internal Server Error"));
+    }
 }

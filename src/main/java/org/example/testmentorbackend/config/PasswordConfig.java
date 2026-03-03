@@ -11,5 +11,7 @@ public class PasswordConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+//        Bcrypt — адаптивная криптографическая хеш-функция,
+//        разработанная для безопасного хранения паролей.
     }
 }

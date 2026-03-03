@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/admin")
-@CrossOrigin("*")
+//@CrossOrigin("*")
 public class AdminController {
 
     private final UserService userService;
@@ -23,13 +23,13 @@ public class AdminController {
     }
 
     @PatchMapping("/users/{userId}/role")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<User> setRole(@PathVariable Long userId, @RequestParam String role) {
         return ResponseEntity.ok(userService.setRole(userId, role));
     }
 
     @DeleteMapping("/quizzes/{quizId}")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Void> deleteQuiz(@PathVariable Long quizId) {
         quizzesService.deleteQuiz(quizId);
         return ResponseEntity.noContent().build();

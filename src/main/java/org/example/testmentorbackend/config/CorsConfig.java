@@ -10,6 +10,7 @@ import java.util.List;
 
 @Configuration
 public class CorsConfig {
+//    Этот класс отвечает за CORS - разрешение браузеру обращаться к backend с другого домена
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {

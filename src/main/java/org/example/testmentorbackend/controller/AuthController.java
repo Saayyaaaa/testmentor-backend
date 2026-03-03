@@ -4,6 +4,7 @@ import org.example.testmentorbackend.Util.JwtUtil;
 import org.example.testmentorbackend.dto.AuthRequestDto;
 import org.example.testmentorbackend.model.entity.User;
 import org.example.testmentorbackend.services.Impl.UserServiceImpl;
+import org.example.testmentorbackend.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,10 +19,11 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin("*") //Разрешает frontend обращаться с любого домена. без этого браузер может блокировать запросы (CORS)
+//@CrossOrigin("*") //Разрешает frontend обращаться с любого домена. без этого браузер может блокировать запросы (CORS)
+
 public class AuthController {
     @Autowired
-    private UserServiceImpl userService;
+    private UserService userService;
 
     @Autowired
     private JwtUtil jwtService;

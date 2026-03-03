@@ -17,7 +17,8 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/responses")
-@CrossOrigin("*")
+//@CrossOrigin("*")
+
 public class UserResponseController {
 
     private final OptionService optionService;

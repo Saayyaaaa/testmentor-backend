@@ -22,7 +22,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/quizzes")
-@CrossOrigin("*")
+//@CrossOrigin("*")
 public class QuizzesController {
 
     private final QuizzesService quizzesService;
@@ -32,7 +32,6 @@ public class QuizzesController {
         this.quizzesService = quizzesService;
         this.userAttemptService = userAttemptService;
     }
-
 
     @PreAuthorize("hasAnyRole('MENTOR','ADMIN')")
     @PostMapping
