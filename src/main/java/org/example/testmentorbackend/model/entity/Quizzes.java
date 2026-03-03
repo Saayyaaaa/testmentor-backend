@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.example.testmentorbackend.model.enums.TestStatus;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -25,12 +26,13 @@ public class Quizzes {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long quizID;
 
-    private String tittle;
+    private String title;
     private String description;
     private LocalTime timeLimit;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id")
+//    @JsonIgnore // do not expose user details (password/roles) in quiz JSON
     private User author;
 
     @Enumerated(EnumType.STRING)

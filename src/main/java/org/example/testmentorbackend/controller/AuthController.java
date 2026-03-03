@@ -17,7 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/auth/")
+@RequestMapping("/api/auth")
 @CrossOrigin("*") //Разрешает frontend обращаться с любого домена. без этого браузер может блокировать запросы (CORS)
 public class AuthController {
     @Autowired

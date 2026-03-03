@@ -13,10 +13,10 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class QuizzesDto {
-    private Long QuizID;
-    private String Tittle;
-    private String Description;
-    private LocalTime TimeLimit;
+    private Long quizID;
+    private String title;
+    private String description;
+    private LocalTime timeLimit;
     private Integer requiredVotes;
 
     private List<QuestionDto> questions;

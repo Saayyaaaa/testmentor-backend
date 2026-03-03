@@ -25,5 +25,6 @@ public class Options {
 
     private String optionText;
 
+    @JsonIgnore // never send correct answers to the client
     private boolean isCorrect;
 }

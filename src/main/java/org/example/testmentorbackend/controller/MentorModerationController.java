@@ -1,7 +1,7 @@
 package org.example.testmentorbackend.controller;
 
+import org.example.testmentorbackend.dto.MentorReviewQuizDto;
 import org.example.testmentorbackend.dto.VoteRequestDto;
-import org.example.testmentorbackend.model.entity.Quizzes;
 import org.example.testmentorbackend.model.entity.Vote;
 import org.example.testmentorbackend.services.ModerationService;
 import org.example.testmentorbackend.services.QuizzesService;
@@ -29,8 +29,8 @@ public class MentorModerationController {
 
     @GetMapping("/review")
     @PreAuthorize("hasAuthority('ROLE_MENTOR')")
-    public ResponseEntity<List<Quizzes>> pending() {
-        return ResponseEntity.ok(quizzesService.getPendingQuizzesForMentors());
+    public ResponseEntity<List<MentorReviewQuizDto>> pending(Authentication authentication) {
+        return ResponseEntity.ok(quizzesService.getPendingQuizzesForMentorsWithMyVote(authentication.getName()));
     }
 
     @PostMapping("/review/{quizId}/vote")

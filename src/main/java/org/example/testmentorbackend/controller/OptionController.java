@@ -5,7 +5,6 @@ import org.example.testmentorbackend.model.entity.Options;
 import org.example.testmentorbackend.model.entity.Questions;
 import org.example.testmentorbackend.services.OptionService;
 import org.example.testmentorbackend.services.QuestionService;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,21 +18,28 @@ public class OptionController {
 
     private final OptionService optionService;
     private final QuestionService questionService;
-    private final ModelMapper modelMapper;
 
     @Autowired
-    public OptionController(OptionService optionService, QuestionService questionService, ModelMapper modelMapper) {
+    public OptionController(OptionService optionService, QuestionService questionService) {
         this.optionService = optionService;
         this.questionService = questionService;
-        this.modelMapper = modelMapper;
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MENTOR')")
     public ResponseEntity<Options> add(@RequestBody OptionDto optionDto) {
-        Options option = modelMapper.map(optionDto, Options.class);
+        if (optionDto == null || optionDto.getQuestionId() == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
         Questions q = questionService.findQuestionById(optionDto.getQuestionId());
+
+        Options option = new Options();
+        option.setOptionText(optionDto.getOptionText());
+        // Lombok generates setCorrect(boolean) for field named "isCorrect"
+        option.setCorrect(optionDto.isIsCorrect());
         option.setQuestions(q);
+
         Options saved = optionService.AddOptions(option);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }

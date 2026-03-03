@@ -5,17 +5,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
-
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserAttemptDto {
-    private Long quizId;
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
-    private int score;
+public class UserAttemptStatsDto {
+    private long attempts;
+    private int bestScore;
+    private int lastScore;
+    private double averageScore;
     private int totalQuestions;
     private int correctAnswers;
 }

@@ -1,5 +1,6 @@
 package org.example.testmentorbackend.services.Impl;
 
+import org.example.testmentorbackend.dto.MentorReviewQuizDto;
 import org.example.testmentorbackend.dto.OptionDto;
 import org.example.testmentorbackend.dto.QuestionDto;
 import org.example.testmentorbackend.dto.QuizzesDto;
@@ -8,25 +9,33 @@ import org.example.testmentorbackend.model.entity.Options;
 import org.example.testmentorbackend.model.entity.Questions;
 import org.example.testmentorbackend.model.entity.Quizzes;
 import org.example.testmentorbackend.model.entity.User;
+import org.example.testmentorbackend.model.entity.Vote;
 import org.example.testmentorbackend.model.enums.TestStatus;
 import org.example.testmentorbackend.repository.QuizzesRepository;
 import org.example.testmentorbackend.repository.UserRepository;
+import org.example.testmentorbackend.repository.VoteRepository;
 import org.example.testmentorbackend.services.QuizzesService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class QuizzesServiceImpl implements QuizzesService {
 
     private final QuizzesRepository quizzesRepository;
     private final UserRepository userRepository;
+    private final VoteRepository voteRepository;
 
     @Autowired
-    public QuizzesServiceImpl(QuizzesRepository quizzesRepository, UserRepository userRepository) {
+    public QuizzesServiceImpl(QuizzesRepository quizzesRepository,
+                              UserRepository userRepository,
+                              VoteRepository voteRepository) {
         this.quizzesRepository = quizzesRepository;
         this.userRepository = userRepository;
+        this.voteRepository = voteRepository;
     }
 
     @Override
@@ -35,7 +44,7 @@ public class QuizzesServiceImpl implements QuizzesService {
                 .orElseThrow(() -> new NotFoundException("Author not found: " + authorUsername));
 
         Quizzes quiz = new Quizzes();
-        quiz.setTittle(dto.getTittle());
+        quiz.setTitle(dto.getTitle());
         quiz.setDescription(dto.getDescription());
         quiz.setTimeLimit(dto.getTimeLimit());
         quiz.setAuthor(author);
@@ -61,7 +70,6 @@ public class QuizzesServiceImpl implements QuizzesService {
                         q.getOptions().add(opt);
                     }
                 }
-
                 quiz.getQuestions().add(q);
             }
         }
@@ -88,6 +96,37 @@ public class QuizzesServiceImpl implements QuizzesService {
     public Quizzes findById(Long id) {
         return quizzesRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Quiz not found: " + id));
+    }
+
+    @Override
+    public Quizzes findDetailsById(Long id) {
+        return quizzesRepository.findDetailsById(id)
+                .orElseThrow(() -> new NotFoundException("Quiz not found: " + id));
+    }
+
+    @Override
+    public List<MentorReviewQuizDto> getPendingQuizzesForMentorsWithMyVote(String mentorUsername) {
+        User mentor = userRepository.findByName(mentorUsername)
+                .orElseThrow(() -> new NotFoundException("Mentor not found: " + mentorUsername));
+
+        List<Quizzes> pending = quizzesRepository.findAllByStatus(TestStatus.PENDING);
+        List<MentorReviewQuizDto> out = new ArrayList<>();
+
+        for (Quizzes q : pending) {
+            Optional<Vote> myVote = voteRepository.findByQuiz_QuizIDAndMentor_Id(q.getQuizID(), mentor.getId());
+            MentorReviewQuizDto dto = new MentorReviewQuizDto(
+                    q.getQuizID(),
+                    q.getTitle(),
+                    q.getDescription(),
+                    q.getStatus(),
+                    q.getApprovalsCount(),
+                    q.getRejectsCount(),
+                    myVote.map(Vote::getVoteType).orElse(null)
+            );
+            out.add(dto);
+        }
+
+        return out;
     }
 
     @Override

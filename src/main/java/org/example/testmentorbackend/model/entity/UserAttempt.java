@@ -23,8 +23,15 @@ public class UserAttempt {
     @JoinColumn(name = "quiz_id")
     private Quizzes quizzes;
 
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
+
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 
     private int score;
+
+    private int totalQuestions;
+    private int correctAnswers;
 }
