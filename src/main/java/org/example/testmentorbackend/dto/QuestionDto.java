@@ -12,12 +12,10 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class QuestionDto {
-    private Long QuestionID;
-    private String QuestionText;
-    private String QuestionType;
-
-    private String AiAnswer;
-
-    private Long QuizId;
+    private Long questionID;
+    private String questionText;
+    private String questionType;
+    private String aiAnswer;
     private List<OptionDto> options;
+    private Long quizId;
 }

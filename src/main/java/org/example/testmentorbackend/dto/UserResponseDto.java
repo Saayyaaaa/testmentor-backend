@@ -10,8 +10,8 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserResponseDto {
-    private Long ResponseID;
-    private Long AttemptId;
-    private Long QuestionId;
-    private Long SelectedOptionID;
+    private Long responseID;
+    private Long attemptId;
+    private Long questionId;
+    private Long selectedOptionID;
 }

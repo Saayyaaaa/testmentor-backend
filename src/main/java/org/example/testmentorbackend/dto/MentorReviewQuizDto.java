@@ -13,11 +13,12 @@ import org.example.testmentorbackend.model.enums.VoteType;
 @NoArgsConstructor
 public class MentorReviewQuizDto {
     private Long quizID;
-    private String tittle;
+    private String title;
     private String description;
     private TestStatus status;
     private int approvalsCount;
     private int rejectsCount;
+    private double approvalPercent;
 
     private VoteType myVote;
 }

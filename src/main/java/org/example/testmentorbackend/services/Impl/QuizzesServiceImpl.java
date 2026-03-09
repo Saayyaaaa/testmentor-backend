@@ -65,7 +65,7 @@ public class QuizzesServiceImpl implements QuizzesService {
                     for (OptionDto od : qd.getOptions()) {
                         Options opt = new Options();
                         opt.setOptionText(od.getOptionText());
-                        opt.setCorrect(od.isIsCorrect());
+                        opt.setCorrect(od.isCorrect());
                         opt.setQuestions(q);
                         q.getOptions().add(opt);
                     }
@@ -109,11 +109,15 @@ public class QuizzesServiceImpl implements QuizzesService {
         User mentor = userRepository.findByName(mentorUsername)
                 .orElseThrow(() -> new NotFoundException("Mentor not found: " + mentorUsername));
 
-        List<Quizzes> pending = quizzesRepository.findAllByStatus(TestStatus.PENDING);
+        List<Quizzes> quizzes = quizzesRepository.findAll();
         List<MentorReviewQuizDto> out = new ArrayList<>();
 
-        for (Quizzes q : pending) {
+        for (Quizzes q : quizzes) {
             Optional<Vote> myVote = voteRepository.findByQuiz_QuizIDAndMentor_Id(q.getQuizID(), mentor.getId());
+
+            int totalVotes = q.getApprovalsCount() + q.getRejectsCount();
+            double approvalPercent = totalVotes == 0 ? 0.0 : (q.getApprovalsCount() * 100.0) / totalVotes;
+
             MentorReviewQuizDto dto = new MentorReviewQuizDto(
                     q.getQuizID(),
                     q.getTitle(),
@@ -121,8 +125,10 @@ public class QuizzesServiceImpl implements QuizzesService {
                     q.getStatus(),
                     q.getApprovalsCount(),
                     q.getRejectsCount(),
+                    approvalPercent,
                     myVote.map(Vote::getVoteType).orElse(null)
             );
+
             out.add(dto);
         }
 

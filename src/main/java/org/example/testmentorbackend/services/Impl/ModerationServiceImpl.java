@@ -16,6 +16,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Service
 public class ModerationServiceImpl implements ModerationService {
 
@@ -38,39 +40,60 @@ public class ModerationServiceImpl implements ModerationService {
         Quizzes quiz = quizzesRepository.findById(quizId)
                 .orElseThrow(() -> new NotFoundException("Quiz not found: " + quizId));
 
-        if (quiz.getStatus() != TestStatus.PENDING) {
-            throw new IllegalStateException("Quiz is not pending. Current status: " + quiz.getStatus());
-        }
-
         User mentor = userRepository.findByName(mentorUsername)
                 .orElseThrow(() -> new NotFoundException("Mentor not found: " + mentorUsername));
 
-        if (mentor.getRoles() == null || !mentor.getRoles().contains("ROLE_MENTOR")) {
-            throw new AccessDeniedException("Only mentors can vote");
+        Optional<Vote> existingVoteOpt = voteRepository.findByQuiz_QuizIDAndMentor_Id(quizId, mentor.getId());
+
+        Vote vote;
+        if (existingVoteOpt.isPresent()) {
+            vote = existingVoteOpt.get();
+
+            // если ментор меняет голос, нужно скорректировать старый счётчик
+            if (vote.getVoteType() != voteRequest.getVoteType()) {
+                if (vote.getVoteType().name().equals("APPROVE")) {
+                    quiz.setApprovalsCount(quiz.getApprovalsCount() - 1);
+                } else if (vote.getVoteType().name().equals("REJECT")) {
+                    quiz.setRejectsCount(quiz.getRejectsCount() - 1);
+                }
+
+                vote.setVoteType(voteRequest.getVoteType());
+
+                if (voteRequest.getVoteType().name().equals("APPROVE")) {
+                    quiz.setApprovalsCount(quiz.getApprovalsCount() + 1);
+                } else if (voteRequest.getVoteType().name().equals("REJECT")) {
+                    quiz.setRejectsCount(quiz.getRejectsCount() + 1);
+                }
+            }
+        } else {
+            vote = new Vote();
+            vote.setQuiz(quiz);
+            vote.setMentor(mentor);
+            vote.setVoteType(voteRequest.getVoteType());
+
+            if (voteRequest.getVoteType().name().equals("APPROVE")) {
+                quiz.setApprovalsCount(quiz.getApprovalsCount() + 1);
+            } else if (voteRequest.getVoteType().name().equals("REJECT")) {
+                quiz.setRejectsCount(quiz.getRejectsCount() + 1);
+            }
         }
 
-        voteRepository.findByQuiz_QuizIDAndMentor_Id(quizId, mentor.getId()).ifPresent(v -> {
-            throw new IllegalStateException("You have already voted for this quiz");
-        });
+        int totalVotes = quiz.getApprovalsCount() + quiz.getRejectsCount();
 
-        Vote vote = new Vote();
-        vote.setQuiz(quiz);
-        vote.setMentor(mentor);
-        vote.setVoteType(voteRequest.getVoteType());
-        vote.setComment(voteRequest.getComment());
+        if (totalVotes >= 3) {
+            double approvalPercent = (quiz.getApprovalsCount() * 100.0) / totalVotes;
 
-        voteRepository.save(vote);
-
-        if (voteRequest.getVoteType() == VoteType.APPROVE) {
-            quiz.setApprovalsCount(quiz.getApprovalsCount() + 1);
+            if (approvalPercent >= 60.0) {
+                quiz.setStatus(TestStatus.APPROVED);
+            } else {
+                quiz.setStatus(TestStatus.REJECTED);
+            }
         } else {
-            quiz.setRejectsCount(quiz.getRejectsCount() + 1);
+            quiz.setStatus(TestStatus.PENDING);
         }
 
         quizzesRepository.save(quiz);
-        recalcAndFinalizeIfNeeded(quizId);
-
-        return vote;
+        return voteRepository.save(vote);
     }
 
     @Override

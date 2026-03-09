@@ -1,5 +1,6 @@
 package org.example.testmentorbackend.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,8 +11,9 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class OptionDto {
-    private Long OptionID;
-    private String OptionText;
-    private boolean IsCorrect;
-    private Long QuestionId;
+    private Long optionID;
+    private Long questionId;
+    private String optionText;
+    @JsonProperty("isCorrect")
+    private boolean correct;
 }

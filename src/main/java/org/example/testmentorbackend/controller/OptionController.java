@@ -36,7 +36,7 @@ public class OptionController {
 
         Options option = new Options();
         option.setOptionText(optionDto.getOptionText());
-        option.setCorrect(optionDto.isIsCorrect());
+        option.setCorrect(optionDto.isCorrect());
         option.setQuestions(q);
 
         Options saved = optionService.AddOptions(option);
