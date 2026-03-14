@@ -2,10 +2,12 @@ package org.example.testmentorbackend.services.Impl;
 
 import org.example.testmentorbackend.dto.UserAttemptDto;
 import org.example.testmentorbackend.dto.UserAttemptStatsDto;
+import org.example.testmentorbackend.dto.UserOverallStatsDto;
 import org.example.testmentorbackend.exceptions.NotFoundException;
 import org.example.testmentorbackend.model.entity.Quizzes;
 import org.example.testmentorbackend.model.entity.User;
 import org.example.testmentorbackend.model.entity.UserAttempt;
+import org.example.testmentorbackend.model.enums.TestStatus;
 import org.example.testmentorbackend.repository.QuizzesRepository;
 import org.example.testmentorbackend.repository.UserAttemptRepository;
 import org.example.testmentorbackend.repository.UserRepository;
@@ -88,11 +90,39 @@ public class UserAttemptServiceImpl implements UserAttemptService {
         return new UserAttemptStatsDto(attempts, best, lastScore, avg, totalQuestions, correctAnswers);
     }
 
+    @Override
+    public UserOverallStatsDto getOverallStats(String username) {
+        long attempts = userAttemptRepository.countByUser_Name(username);
+        int best = safeInt(userAttemptRepository.bestScoreOverall(username));
+        double avg = safeDouble(userAttemptRepository.avgScoreOverall(username));
+
+        List<UserAttempt> attemptsList = userAttemptRepository.findByUser_NameOrderByEndTimeDesc(username);
+        int lastScore = attemptsList.isEmpty() ? 0 : attemptsList.get(0).getScore();
+
+        long totalCorrect = safeLong(userAttemptRepository.totalCorrectAnswersOverall(username));
+        long totalQuestions = safeLong(userAttemptRepository.totalQuestionsOverall(username));
+        long availableQuizzes = quizzesRepository.countByStatus(TestStatus.APPROVED);
+
+        return new UserOverallStatsDto(
+                attempts,
+                best,
+                lastScore,
+                avg,
+                totalCorrect,
+                totalQuestions,
+                availableQuizzes
+        );
+    }
+
     private int safeInt(Integer v) {
         return v == null ? 0 : v;
     }
 
     private double safeDouble(Double v) {
         return v == null ? 0.0 : v;
+    }
+
+    private long safeLong(Long v) {
+        return v == null ? 0L : v;
     }
 }

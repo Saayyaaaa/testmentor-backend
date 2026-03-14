@@ -13,6 +13,8 @@ public interface QuizzesRepository extends JpaRepository<Quizzes, Long> {
 
     List<Quizzes> findAllByStatus(TestStatus status);
 
+    long countByStatus(TestStatus status);
+
     List<Quizzes> findAllByAuthor_NameOrderByCreatedAtDesc(String authorName);
 
     @Query("""

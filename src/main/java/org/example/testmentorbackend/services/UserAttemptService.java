@@ -2,6 +2,7 @@ package org.example.testmentorbackend.services;
 
 import org.example.testmentorbackend.dto.UserAttemptDto;
 import org.example.testmentorbackend.dto.UserAttemptStatsDto;
+import org.example.testmentorbackend.dto.UserOverallStatsDto;
 import org.example.testmentorbackend.model.entity.UserAttempt;
 
 import java.util.List;
@@ -17,4 +18,6 @@ public interface UserAttemptService {
     List<UserAttempt> findByQuiz(Long quizId);
 
     UserAttemptStatsDto getStats(String username, Long quizId);
+
+    UserOverallStatsDto getOverallStats(String username);
 }

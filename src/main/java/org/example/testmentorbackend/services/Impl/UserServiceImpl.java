@@ -1,5 +1,7 @@
 package org.example.testmentorbackend.services.Impl;
 
+import org.example.testmentorbackend.dto.UserProfileDto;
+import org.example.testmentorbackend.dto.UserProfileUpdateDto;
 import org.example.testmentorbackend.exceptions.NotFoundException;
 import org.example.testmentorbackend.model.entity.User;
 import org.example.testmentorbackend.repository.UserRepository;
@@ -89,6 +91,45 @@ public class UserServiceImpl implements UserService {
         }
 
         userRepository.delete(target);
+    }
+
+    @Override
+    public UserProfileDto getMyProfile(String username) {
+        User user = getByName(username);
+        return new UserProfileDto(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getContact(),
+                user.getRoles()
+        );
+    }
+
+    @Override
+    public UserProfileDto updateMyProfile(String username, UserProfileUpdateDto dto) {
+        User user = getByName(username);
+
+        if (dto.getEmail() != null && !dto.getEmail().isBlank()) {
+            user.setEmail(dto.getEmail().trim());
+        }
+
+        if (dto.getContact() != null) {
+            user.setContact(dto.getContact().trim());
+        }
+
+        if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
+            user.setPassword(encoder.encode(dto.getPassword()));
+        }
+
+        User saved = userRepository.save(user);
+
+        return new UserProfileDto(
+                saved.getId(),
+                saved.getName(),
+                saved.getEmail(),
+                saved.getContact(),
+                saved.getRoles()
+        );
     }
 
     private String normalizeRoles(String raw) {

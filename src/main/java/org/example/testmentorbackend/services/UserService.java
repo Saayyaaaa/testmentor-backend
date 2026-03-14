@@ -1,8 +1,11 @@
 package org.example.testmentorbackend.services;
 
+import org.example.testmentorbackend.dto.UserProfileDto;
+import org.example.testmentorbackend.dto.UserProfileUpdateDto;
 import org.example.testmentorbackend.model.entity.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+
 import java.util.List;
 
 public interface UserService extends UserDetailsService {
@@ -20,4 +23,8 @@ public interface UserService extends UserDetailsService {
     List<User> getByRole(String role);
 
     void deleteUser(Long userId, String currentAdminName);
+
+    UserProfileDto getMyProfile(String username);
+
+    UserProfileDto updateMyProfile(String username, UserProfileUpdateDto dto);
 }
