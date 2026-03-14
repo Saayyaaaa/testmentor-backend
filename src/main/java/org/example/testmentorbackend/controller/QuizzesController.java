@@ -17,12 +17,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 @RestController
 @RequestMapping("/api/quizzes")
-//@CrossOrigin("*")
 public class QuizzesController {
 
     private final QuizzesService quizzesService;
@@ -47,7 +48,6 @@ public class QuizzesController {
         if (isAdmin) {
             return ResponseEntity.ok(quizzesService.getAllQuizzesForAdmin());
         }
-        // students + mentors see approved quizzes
         return ResponseEntity.ok(quizzesService.getApprovedQuizzesForStudents());
     }
 
@@ -62,10 +62,21 @@ public class QuizzesController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Quiz is not approved yet");
         }
 
+        if (quiz.getQuestions() != null) {
+            Random random = new Random(quiz.getQuizID());
+
+            Collections.shuffle(quiz.getQuestions(), random);
+
+            for (Questions question : quiz.getQuestions()) {
+                if (question.getOptions() != null) {
+                    Collections.shuffle(question.getOptions(), random);
+                }
+            }
+        }
+
         return ResponseEntity.ok(quiz);
     }
 
-    // Submit answers and save attempt
     @PostMapping("/{id}/submit")
     public ResponseEntity<QuizSubmitResultDto> submit(
             @PathVariable Long id,
@@ -74,7 +85,9 @@ public class QuizzesController {
     ) {
         Quizzes quiz = quizzesService.findDetailsById(id);
 
-        if (quiz.getStatus() != TestStatus.APPROVED && !hasRole(authentication, "ROLE_MENTOR") && !hasRole(authentication, "ROLE_ADMIN")) {
+        if (quiz.getStatus() != TestStatus.APPROVED
+                && !hasRole(authentication, "ROLE_MENTOR")
+                && !hasRole(authentication, "ROLE_ADMIN")) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Quiz is not approved yet");
         }
 
@@ -86,6 +99,7 @@ public class QuizzesController {
             for (Questions q : quiz.getQuestions()) {
                 Long selectedOptionId = answers.get(q.getQuestionID());
                 if (selectedOptionId == null || q.getOptions() == null) continue;
+
                 for (Options opt : q.getOptions()) {
                     if (opt.getOptionID().equals(selectedOptionId) && opt.isCorrect()) {
                         correct++;
@@ -95,7 +109,7 @@ public class QuizzesController {
             }
         }
 
-        int score = correct; // 1 point per correct
+        int score = correct;
 
         UserAttemptDto attemptDto = new UserAttemptDto();
         attemptDto.setQuizId(id);
@@ -107,12 +121,16 @@ public class QuizzesController {
 
         UserAttempt saved = userAttemptService.saveAttempt(authentication.getName(), attemptDto);
 
-        return ResponseEntity.ok(new QuizSubmitResultDto(saved.getAttemptID(), score, total, correct));
+        return ResponseEntity.ok(
+                new QuizSubmitResultDto(saved.getAttemptID(), score, total, correct)
+        );
     }
 
     private boolean hasRole(Authentication authentication, String role) {
         for (GrantedAuthority a : authentication.getAuthorities()) {
-            if (role.equals(a.getAuthority())) return true;
+            if (role.equals(a.getAuthority())) {
+                return true;
+            }
         }
         return false;
     }
