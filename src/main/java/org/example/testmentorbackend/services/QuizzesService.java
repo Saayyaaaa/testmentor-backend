@@ -18,11 +18,15 @@ public interface QuizzesService {
 
     Quizzes findById(Long id);
 
-    // 🔹 НОВЫЙ метод — нужен для страницы деталей квиза
     Quizzes findDetailsById(Long id);
 
-    // 🔹 НОВЫЙ метод — для ReviewPanel с myVote
     List<MentorReviewQuizDto> getPendingQuizzesForMentorsWithMyVote(String mentorUsername);
 
     void deleteQuiz(Long id);
+
+    List<MentorReviewQuizDto> getReviewQuizzes(String username, boolean onlyMine, boolean isAdmin);
+
+    Quizzes updateQuizMeta(Long quizId, String username, boolean isAdmin, QuizzesDto dto);
+
+    void deleteQuizForReviewPanel(Long quizId, String username, boolean isAdmin);
 }

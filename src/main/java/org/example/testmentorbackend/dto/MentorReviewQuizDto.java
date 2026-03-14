@@ -19,6 +19,9 @@ public class MentorReviewQuizDto {
     private int approvalsCount;
     private int rejectsCount;
     private double approvalPercent;
-
     private VoteType myVote;
+
+    private String authorName;
+    private boolean canEdit;
+    private boolean canDelete;
 }

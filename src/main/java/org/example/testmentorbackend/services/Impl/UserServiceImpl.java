@@ -10,6 +10,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Locale;
 
 @Service
@@ -61,6 +62,33 @@ public class UserServiceImpl implements UserService {
         User user = getById(userId);
         user.setRoles(normalized);
         return userRepository.save(user);
+    }
+
+    @Override
+    public List<User> getByRole(String role) {
+        return userRepository.findAll()
+                .stream()
+                .filter(user -> user.getRoles() != null && user.getRoles().contains(role))
+                .toList();
+    }
+
+    @Override
+    public void deleteUser(Long userId, String currentAdminName) {
+        User target = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        User currentAdmin = userRepository.findByName(currentAdminName)
+                .orElseThrow(() -> new RuntimeException("Current admin not found"));
+
+        if (target.getId().equals(currentAdmin.getId())) {
+            throw new RuntimeException("Admin cannot delete own account");
+        }
+
+        if (target.getRoles() != null && target.getRoles().contains("ROLE_ADMIN")) {
+            throw new RuntimeException("Admin cannot delete another admin");
+        }
+
+        userRepository.delete(target);
     }
 
     private String normalizeRoles(String raw) {

@@ -105,18 +105,23 @@ public class QuizzesServiceImpl implements QuizzesService {
     }
 
     @Override
-    public List<MentorReviewQuizDto> getPendingQuizzesForMentorsWithMyVote(String mentorUsername) {
-        User mentor = userRepository.findByName(mentorUsername)
-                .orElseThrow(() -> new NotFoundException("Mentor not found: " + mentorUsername));
+    public List<MentorReviewQuizDto> getReviewQuizzes(String username, boolean onlyMine, boolean isAdmin) {
+        User currentUser = userRepository.findByName(username)
+                .orElseThrow(() -> new NotFoundException("User not found: " + username));
 
-        List<Quizzes> quizzes = quizzesRepository.findAll();
+        List<Quizzes> quizzes = onlyMine
+                ? quizzesRepository.findAllByAuthor_NameOrderByCreatedAtDesc(username)
+                : quizzesRepository.findAll();
+
         List<MentorReviewQuizDto> out = new ArrayList<>();
 
         for (Quizzes q : quizzes) {
-            Optional<Vote> myVote = voteRepository.findByQuiz_QuizIDAndMentor_Id(q.getQuizID(), mentor.getId());
+            Optional<Vote> myVote = voteRepository.findByQuiz_QuizIDAndMentor_Id(q.getQuizID(), currentUser.getId());
 
             int totalVotes = q.getApprovalsCount() + q.getRejectsCount();
             double approvalPercent = totalVotes == 0 ? 0.0 : (q.getApprovalsCount() * 100.0) / totalVotes;
+
+            boolean isAuthor = q.getAuthor() != null && username.equals(q.getAuthor().getName());
 
             MentorReviewQuizDto dto = new MentorReviewQuizDto(
                     q.getQuizID(),
@@ -126,13 +131,55 @@ public class QuizzesServiceImpl implements QuizzesService {
                     q.getApprovalsCount(),
                     q.getRejectsCount(),
                     approvalPercent,
-                    myVote.map(Vote::getVoteType).orElse(null)
+                    myVote.map(Vote::getVoteType).orElse(null),
+                    q.getAuthor() != null ? q.getAuthor().getName() : null,
+                    isAuthor || isAdmin,
+                    isAuthor || isAdmin
             );
 
             out.add(dto);
         }
 
         return out;
+    }
+
+    @Override
+    public List<MentorReviewQuizDto> getPendingQuizzesForMentorsWithMyVote(String username) {
+        return getReviewQuizzes(username, false, false);
+    }
+
+    @Override
+    public Quizzes updateQuizMeta(Long quizId, String username, boolean isAdmin, QuizzesDto dto) {
+        Quizzes quiz = quizzesRepository.findById(quizId)
+                .orElseThrow(() -> new NotFoundException("Quiz not found: " + quizId));
+
+        boolean isAuthor = quiz.getAuthor() != null && username.equals(quiz.getAuthor().getName());
+        if (!isAuthor && !isAdmin) {
+            throw new org.springframework.security.access.AccessDeniedException("You cannot edit this quiz");
+        }
+
+        if (dto.getTitle() != null && !dto.getTitle().isBlank()) {
+            quiz.setTitle(dto.getTitle().trim());
+        }
+
+        if (dto.getDescription() != null) {
+            quiz.setDescription(dto.getDescription().trim());
+        }
+
+        return quizzesRepository.save(quiz);
+    }
+
+    @Override
+    public void deleteQuizForReviewPanel(Long quizId, String username, boolean isAdmin) {
+        Quizzes quiz = quizzesRepository.findById(quizId)
+                .orElseThrow(() -> new NotFoundException("Quiz not found: " + quizId));
+
+        boolean isAuthor = quiz.getAuthor() != null && username.equals(quiz.getAuthor().getName());
+        if (!isAuthor && !isAdmin) {
+            throw new org.springframework.security.access.AccessDeniedException("You cannot delete this quiz");
+        }
+
+        quizzesRepository.delete(quiz);
     }
 
     @Override
