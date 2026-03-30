@@ -61,7 +61,7 @@ public class QuizzesServiceImpl implements QuizzesService {
         quiz.setStatus(TestStatus.PENDING);
         quiz.setApprovalsCount(0);
         quiz.setRejectsCount(0);
-        quiz.setRequiredVotes(dto.getRequiredVotes() != null ? dto.getRequiredVotes() : 6);
+        quiz.setRequiredVotes(dto.getRequiredVotes() != null ? dto.getRequiredVotes() : 3);
 
         if (dto.getQuestions() != null) {
             for (QuestionDto qd : dto.getQuestions()) {
@@ -240,6 +240,7 @@ public class QuizzesServiceImpl implements QuizzesService {
         quiz.setStatus(TestStatus.PENDING);
         quiz.setApprovalsCount(0);
         quiz.setRejectsCount(0);
+        quiz.setRequiredVotes(3);
 
         return quizzesRepository.save(quiz);
     }

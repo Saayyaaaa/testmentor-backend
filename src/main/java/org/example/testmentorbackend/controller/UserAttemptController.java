@@ -1,5 +1,6 @@
 package org.example.testmentorbackend.controller;
 
+import org.example.testmentorbackend.dto.QuizAttemptsOverviewDto;
 import org.example.testmentorbackend.dto.UserAttemptDto;
 import org.example.testmentorbackend.dto.UserAttemptStatsDto;
 import org.example.testmentorbackend.dto.UserOverallStatsDto;
@@ -7,12 +8,13 @@ import org.example.testmentorbackend.model.entity.UserAttempt;
 import org.example.testmentorbackend.services.UserAttemptService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/attempts")
-//@CrossOrigin("*")
 public class UserAttemptController {
 
     private final UserAttemptService userAttemptService;
@@ -38,5 +40,24 @@ public class UserAttemptController {
     public ResponseEntity<UserOverallStatsDto> overall(Authentication authentication) {
         String username = authentication.getName();
         return ResponseEntity.ok(userAttemptService.getOverallStats(username));
+    }
+
+    @GetMapping("/quiz/{quizId}/overview")
+    @PreAuthorize("hasAnyRole('MENTOR','ADMIN')")
+    public ResponseEntity<QuizAttemptsOverviewDto> getQuizOverview(
+            @PathVariable Long quizId,
+            Authentication authentication
+    ) {
+        boolean isAdmin = hasRole(authentication, "ROLE_ADMIN");
+        return ResponseEntity.ok(
+                userAttemptService.getQuizAttemptsOverview(quizId, authentication.getName(), isAdmin)
+        );
+    }
+
+    private boolean hasRole(Authentication authentication, String role) {
+        for (GrantedAuthority a : authentication.getAuthorities()) {
+            if (role.equals(a.getAuthority())) return true;
+        }
+        return false;
     }
 }

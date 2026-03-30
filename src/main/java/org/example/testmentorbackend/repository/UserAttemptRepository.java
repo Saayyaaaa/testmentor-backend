@@ -9,7 +9,10 @@ import java.util.List;
 
 public interface UserAttemptRepository extends JpaRepository<UserAttempt, Long> {
 
-    List<UserAttempt> findByQuizzes_QuizID(Long quizId);
+    List<UserAttempt> findByQuizzes_QuizIDOrderByEndTimeDesc(Long quizId);
+
+    @Query("select count(distinct a.user.id) from UserAttempt a where a.quizzes.quizID = :quizId")
+    long countDistinctUsersByQuiz(@Param("quizId") Long quizId);
 
     List<UserAttempt> findByUser_NameOrderByEndTimeDesc(String username);
 

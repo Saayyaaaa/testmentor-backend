@@ -4,7 +4,7 @@ import org.example.testmentorbackend.dto.UserAttemptDto;
 import org.example.testmentorbackend.dto.UserAttemptStatsDto;
 import org.example.testmentorbackend.dto.UserOverallStatsDto;
 import org.example.testmentorbackend.model.entity.UserAttempt;
-
+import org.example.testmentorbackend.dto.QuizAttemptsOverviewDto;
 import java.util.List;
 
 public interface UserAttemptService {
@@ -20,4 +20,7 @@ public interface UserAttemptService {
     UserAttemptStatsDto getStats(String username, Long quizId);
 
     UserOverallStatsDto getOverallStats(String username);
+
+    QuizAttemptsOverviewDto getQuizAttemptsOverview(Long quizId, String requesterUsername, boolean isAdmin);
+
 }

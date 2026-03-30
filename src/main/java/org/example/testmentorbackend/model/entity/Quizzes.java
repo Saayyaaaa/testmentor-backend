@@ -42,9 +42,9 @@ public class Quizzes {
     private int rejectsCount = 0;
 
     /**
-     * порог для автоматического принятия решения дефолтный 6
+     * Минимум 3 голоса для выхода теста студентам
      */
-    private int requiredVotes = 6;
+    private int requiredVotes = 3;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

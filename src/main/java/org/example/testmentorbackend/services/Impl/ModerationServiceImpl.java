@@ -49,12 +49,14 @@ public class ModerationServiceImpl implements ModerationService {
             vote = existingVoteOpt.get();
 
             if (vote.getVoteType() != voteRequest.getVoteType()) {
+                // убираем старый голос из счетчиков
                 if (vote.getVoteType() == VoteType.APPROVE) {
                     quiz.setApprovalsCount(Math.max(0, quiz.getApprovalsCount() - 1));
                 } else if (vote.getVoteType() == VoteType.REJECT) {
                     quiz.setRejectsCount(Math.max(0, quiz.getRejectsCount() - 1));
                 }
 
+                // ставим новый голос
                 vote.setVoteType(voteRequest.getVoteType());
 
                 if (voteRequest.getVoteType() == VoteType.APPROVE) {
@@ -78,18 +80,7 @@ public class ModerationServiceImpl implements ModerationService {
 
         vote.setComment(voteRequest.getComment() == null ? null : voteRequest.getComment().trim());
 
-        int totalVotes = quiz.getApprovalsCount() + quiz.getRejectsCount();
-
-        if (totalVotes >= quiz.getRequiredVotes()) {
-            double approvalPercent = (quiz.getApprovalsCount() * 100.0) / totalVotes;
-            if (approvalPercent >= 60.0) {
-                quiz.setStatus(TestStatus.APPROVED);
-            } else {
-                quiz.setStatus(TestStatus.REJECTED);
-            }
-        } else {
-            quiz.setStatus(TestStatus.PENDING);
-        }
+        recalculateQuizStatus(quiz);
 
         quizzesRepository.save(quiz);
         return voteRepository.save(vote);
@@ -101,16 +92,25 @@ public class ModerationServiceImpl implements ModerationService {
         Quizzes quiz = quizzesRepository.findById(quizId)
                 .orElseThrow(() -> new NotFoundException("Quiz not found: " + quizId));
 
-        if (quiz.getStatus() != TestStatus.PENDING) {
-            return quiz;
-        }
-
-        if (quiz.getApprovalsCount() >= quiz.getRequiredVotes()) {
-            quiz.setStatus(TestStatus.APPROVED);
-        } else if (quiz.getRejectsCount() >= quiz.getRequiredVotes()) {
-            quiz.setStatus(TestStatus.REJECTED);
-        }
-
+        recalculateQuizStatus(quiz);
         return quizzesRepository.save(quiz);
+    }
+
+    private void recalculateQuizStatus(Quizzes quiz) {
+        int totalVotes = quiz.getApprovalsCount() + quiz.getRejectsCount();
+
+        if (totalVotes < quiz.getRequiredVotes()) {
+            quiz.setStatus(TestStatus.PENDING);
+            return;
+        }
+
+        double approvalPercent = (quiz.getApprovalsCount() * 100.0) / totalVotes;
+
+        if (approvalPercent >= 60.0) {
+            quiz.setStatus(TestStatus.APPROVED);
+        } else {
+            // теперь тест не отклоняется окончательно, а возвращается в ожидание голосования
+            quiz.setStatus(TestStatus.PENDING);
+        }
     }
 }

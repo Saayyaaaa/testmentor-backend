@@ -1,5 +1,7 @@
 package org.example.testmentorbackend.services.Impl;
 
+import org.example.testmentorbackend.dto.QuizAttemptEntryDto;
+import org.example.testmentorbackend.dto.QuizAttemptsOverviewDto;
 import org.example.testmentorbackend.dto.UserAttemptDto;
 import org.example.testmentorbackend.dto.UserAttemptStatsDto;
 import org.example.testmentorbackend.dto.UserOverallStatsDto;
@@ -13,6 +15,7 @@ import org.example.testmentorbackend.repository.UserAttemptRepository;
 import org.example.testmentorbackend.repository.UserRepository;
 import org.example.testmentorbackend.services.UserAttemptService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -71,7 +74,7 @@ public class UserAttemptServiceImpl implements UserAttemptService {
 
     @Override
     public List<UserAttempt> findByQuiz(Long quizId) {
-        return userAttemptRepository.findByQuizzes_QuizID(quizId);
+        return userAttemptRepository.findByQuizzes_QuizIDOrderByEndTimeDesc(quizId);
     }
 
     @Override
@@ -112,6 +115,68 @@ public class UserAttemptServiceImpl implements UserAttemptService {
                 totalQuestions,
                 availableQuizzes
         );
+    }
+
+    @Override
+    public QuizAttemptsOverviewDto getQuizAttemptsOverview(Long quizId, String requesterUsername, boolean isAdmin) {
+        Quizzes quiz = quizzesRepository.findById(quizId)
+                .orElseThrow(() -> new NotFoundException("Quiz not found: " + quizId));
+
+        if (!isAdmin) {
+            if (quiz.getAuthor() == null || quiz.getAuthor().getName() == null ||
+                    !quiz.getAuthor().getName().equals(requesterUsername)) {
+                throw new AccessDeniedException("You can view statistics only for your own quizzes");
+            }
+        }
+
+        List<UserAttempt> attempts = userAttemptRepository.findByQuizzes_QuizIDOrderByEndTimeDesc(quizId);
+        long uniqueUsersCount = userAttemptRepository.countDistinctUsersByQuiz(quizId);
+
+        double totalPercent = 0.0;
+        double bestPercent = 0.0;
+
+        List<QuizAttemptEntryDto> entries = attempts.stream()
+                .map(a -> {
+                    double percent = calculatePercent(a.getCorrectAnswers(), a.getTotalQuestions());
+                    return new QuizAttemptEntryDto(
+                            a.getAttemptID(),
+                            a.getUser() != null ? a.getUser().getName() : "Unknown",
+                            a.getScore(),
+                            a.getCorrectAnswers(),
+                            a.getTotalQuestions(),
+                            percent,
+                            a.getEndTime()
+                    );
+                })
+                .toList();
+
+        for (QuizAttemptEntryDto entry : entries) {
+            totalPercent += entry.getPercent();
+            if (entry.getPercent() > bestPercent) {
+                bestPercent = entry.getPercent();
+            }
+        }
+
+        double averagePercent = entries.isEmpty() ? 0.0 : totalPercent / entries.size();
+
+        return new QuizAttemptsOverviewDto(
+                quiz.getQuizID(),
+                quiz.getTitle(),
+                uniqueUsersCount,
+                entries.size(),
+                round2(averagePercent),
+                round2(bestPercent),
+                entries
+        );
+    }
+
+    private double calculatePercent(int correctAnswers, int totalQuestions) {
+        if (totalQuestions <= 0) return 0.0;
+        return (correctAnswers * 100.0) / totalQuestions;
+    }
+
+    private double round2(double value) {
+        return Math.round(value * 100.0) / 100.0;
     }
 
     private int safeInt(Integer v) {
