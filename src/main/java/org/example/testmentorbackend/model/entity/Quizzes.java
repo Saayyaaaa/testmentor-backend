@@ -32,7 +32,7 @@ public class Quizzes {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id")
-//    @JsonIgnore // do not expose user details (password/roles) in quiz JSON
+    @JsonIgnore
     private User author;
 
     @Enumerated(EnumType.STRING)

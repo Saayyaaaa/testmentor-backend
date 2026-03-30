@@ -18,10 +18,11 @@ public interface QuizzesRepository extends JpaRepository<Quizzes, Long> {
     List<Quizzes> findAllByAuthor_NameOrderByCreatedAtDesc(String authorName);
 
     @Query("""
-        select distinct q
-        from Quizzes q
-        left join fetch q.questions qu
-        where q.quizID = :id
-    """)
+    select distinct q
+    from Quizzes q
+    left join fetch q.author a
+    left join fetch q.questions qu
+    where q.quizID = :id
+""")
     Optional<Quizzes> findDetailsById(@Param("id") Long id);
 }

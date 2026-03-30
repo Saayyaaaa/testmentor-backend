@@ -1,5 +1,7 @@
 package org.example.testmentorbackend.services;
 
+import org.example.testmentorbackend.dto.AiAppendQuestionsRequestDto;
+import org.example.testmentorbackend.dto.MentorReviewDetailsDto;
 import org.example.testmentorbackend.dto.MentorReviewQuizDto;
 import org.example.testmentorbackend.dto.QuizzesDto;
 import org.example.testmentorbackend.model.entity.Quizzes;
@@ -26,7 +28,11 @@ public interface QuizzesService {
 
     List<MentorReviewQuizDto> getReviewQuizzes(String username, boolean onlyMine, boolean isAdmin);
 
+    MentorReviewDetailsDto getReviewQuizDetails(Long quizId, String username, boolean isAdmin);
+
     Quizzes updateQuizMeta(Long quizId, String username, boolean isAdmin, QuizzesDto dto);
 
     void deleteQuizForReviewPanel(Long quizId, String username, boolean isAdmin);
+
+    Quizzes appendAiQuestions(Long quizId, String username, boolean isAdmin, AiAppendQuestionsRequestDto request);
 }

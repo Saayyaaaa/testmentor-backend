@@ -5,24 +5,20 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.example.testmentorbackend.model.enums.TestStatus;
-import org.example.testmentorbackend.model.enums.VoteType;
+
+import java.time.LocalTime;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class MentorReviewQuizDto {
+public class QuizMetaResponseDto {
     private Long quizID;
     private String title;
     private String description;
+    private LocalTime timeLimit;
     private TestStatus status;
     private int approvalsCount;
     private int rejectsCount;
-    private double approvalPercent;
-    private VoteType myVote;
-    private String myComment;
-
-    private String authorName;
-    private boolean canEdit;
-    private boolean canDelete;
+    private int requiredVotes;
 }

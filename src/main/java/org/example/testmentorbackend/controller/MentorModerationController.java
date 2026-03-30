@@ -1,8 +1,6 @@
 package org.example.testmentorbackend.controller;
 
-import org.example.testmentorbackend.dto.QuizzesDto;
-import org.example.testmentorbackend.dto.MentorReviewQuizDto;
-import org.example.testmentorbackend.dto.VoteRequestDto;
+import org.example.testmentorbackend.dto.*;
 import org.example.testmentorbackend.model.entity.Quizzes;
 import org.example.testmentorbackend.model.entity.Vote;
 import org.example.testmentorbackend.services.ModerationService;
@@ -45,23 +43,58 @@ public class MentorModerationController {
 
     @PostMapping("/review/{quizId}/vote")
     @PreAuthorize("hasAnyRole('MENTOR','ADMIN')")
-    public ResponseEntity<Vote> vote(@PathVariable Long quizId,
-                                     @RequestBody VoteRequestDto voteRequest,
-                                     Authentication authentication) {
+    public ResponseEntity<VoteResponseDto> vote(
+            @PathVariable Long quizId,
+            @RequestBody VoteRequestDto voteRequest,
+            Authentication authentication
+    ) {
         Vote vote = moderationService.vote(quizId, authentication.getName(), voteRequest);
-        return ResponseEntity.ok(vote);
+
+        VoteResponseDto response = new VoteResponseDto(
+                vote.getId(),
+                vote.getVoteType(),
+                vote.getComment(),
+                vote.getCreatedAt()
+        );
+
+        return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/review/{quizId}")
     @PreAuthorize("hasAnyRole('MENTOR','ADMIN')")
-    public ResponseEntity<Quizzes> updateQuiz(
+    public ResponseEntity<QuizMetaResponseDto> updateQuiz(
             @PathVariable Long quizId,
             @RequestBody QuizzesDto dto,
             Authentication authentication
     ) {
         boolean isAdmin = hasRole(authentication, "ROLE_ADMIN");
         Quizzes updated = quizzesService.updateQuizMeta(quizId, authentication.getName(), isAdmin, dto);
-        return ResponseEntity.ok(updated);
+
+        QuizMetaResponseDto response = new QuizMetaResponseDto(
+                updated.getQuizID(),
+                updated.getTitle(),
+                updated.getDescription(),
+                updated.getTimeLimit(),
+                updated.getStatus(),
+                updated.getApprovalsCount(),
+                updated.getRejectsCount(),
+                updated.getRequiredVotes()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/review/{quizId}")
+    @PreAuthorize("hasAnyRole('MENTOR','ADMIN')")
+    public ResponseEntity<MentorReviewDetailsDto> reviewDetails(
+            @PathVariable Long quizId,
+            Authentication authentication
+    ) {
+        boolean isAdmin = hasRole(authentication, "ROLE_ADMIN");
+
+        return ResponseEntity.ok(
+                quizzesService.getReviewQuizDetails(quizId, authentication.getName(), isAdmin)
+        );
     }
 
     @DeleteMapping("/review/{quizId}")

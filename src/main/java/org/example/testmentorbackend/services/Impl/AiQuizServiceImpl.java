@@ -2,7 +2,9 @@ package org.example.testmentorbackend.services.Impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.testmentorbackend.dto.AiAppendQuestionsRequestDto;
 import org.example.testmentorbackend.dto.AiQuizGenerateRequestDto;
+import org.example.testmentorbackend.dto.QuestionDto;
 import org.example.testmentorbackend.dto.QuizzesDto;
 import org.example.testmentorbackend.services.AiQuizService;
 import org.springframework.beans.factory.annotation.Value;
@@ -81,6 +83,95 @@ public class AiQuizServiceImpl implements AiQuizService {
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("AI generation failed: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public List<QuestionDto> generateAdditionalQuestions(
+            AiAppendQuestionsRequestDto request,
+            String existingQuizTitle,
+            String existingQuizDescription
+    ) {
+        try {
+            if (request == null) {
+                throw new RuntimeException("Request is null");
+            }
+
+            int questionCount = request.getQuestionCount() != null ? request.getQuestionCount() : 3;
+            String difficulty = request.getDifficulty() != null ? request.getDifficulty() : "Easy";
+            String language = request.getLanguage() != null ? request.getLanguage() : "English";
+
+            String source = (request.getSourceText() != null && !request.getSourceText().isBlank())
+                    ? request.getSourceText()
+                    : request.getTopic();
+
+            if (source == null || source.isBlank()) {
+                source = existingQuizTitle + ". " + (existingQuizDescription != null ? existingQuizDescription : "");
+            }
+
+            String prompt = """
+                Generate additional questions for an EXISTING quiz.
+
+                Existing quiz:
+                title: %s
+                description: %s
+
+                Requirements:
+                - Create exactly %d NEW questions
+                - Do NOT repeat existing questions
+                - difficulty: %s
+                - language: %s
+                - Use SINGLE_CHOICE questions only
+                - Each question must have exactly 4 options
+                - Exactly one option must be correct
+                - Keep questions clear and suitable for students
+                - Return ONLY raw valid JSON
+                - Do not use markdown
+                - Do not wrap JSON in ``` blocks
+                - Do not add explanations before or after JSON
+
+                JSON structure:
+                {
+                  "questions": [
+                    {
+                      "questionText": "string",
+                      "questionType": "SINGLE_CHOICE",
+                      "aiAnswer": "string",
+                      "options": [
+                        {"optionText": "string", "isCorrect": false},
+                        {"optionText": "string", "isCorrect": true},
+                        {"optionText": "string", "isCorrect": false},
+                        {"optionText": "string", "isCorrect": false}
+                      ]
+                    }
+                  ]
+                }
+
+                Material:
+                %s
+                """.formatted(
+                    existingQuizTitle,
+                    existingQuizDescription != null ? existingQuizDescription : "",
+                    questionCount,
+                    difficulty,
+                    language,
+                    source
+            );
+
+            String content = callModel(prompt);
+            String cleanJson = extractJson(content);
+
+            JsonNode root = objectMapper.readTree(cleanJson);
+            JsonNode questionsNode = root.get("questions");
+
+            if (questionsNode == null || !questionsNode.isArray() || questionsNode.isEmpty()) {
+                throw new RuntimeException("AI did not return questions");
+            }
+
+            return objectMapper.readerForListOf(QuestionDto.class).readValue(questionsNode);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate additional questions: " + e.getMessage(), e);
         }
     }
 

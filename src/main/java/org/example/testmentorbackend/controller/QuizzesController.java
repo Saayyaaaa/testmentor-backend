@@ -15,6 +15,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.example.testmentorbackend.dto.AiAppendQuestionsRequestDto;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -75,6 +76,20 @@ public class QuizzesController {
         }
 
         return ResponseEntity.ok(quiz);
+    }
+
+    @PreAuthorize("hasAnyRole('MENTOR','ADMIN')")
+    @PostMapping("/{id}/ai-append")
+    public ResponseEntity<Quizzes> appendAiQuestions(
+            @PathVariable Long id,
+            @RequestBody AiAppendQuestionsRequestDto request,
+            Authentication authentication
+    ) {
+        boolean isAdmin = hasRole(authentication, "ROLE_ADMIN");
+        String username = authentication.getName();
+
+        Quizzes updated = quizzesService.appendAiQuestions(id, username, isAdmin, request);
+        return ResponseEntity.ok(updated);
     }
 
     @PostMapping("/{id}/submit")

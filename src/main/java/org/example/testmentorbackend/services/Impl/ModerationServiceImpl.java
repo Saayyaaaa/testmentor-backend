@@ -12,7 +12,6 @@ import org.example.testmentorbackend.repository.UserRepository;
 import org.example.testmentorbackend.repository.VoteRepository;
 import org.example.testmentorbackend.services.ModerationService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,8 +26,8 @@ public class ModerationServiceImpl implements ModerationService {
 
     @Autowired
     public ModerationServiceImpl(VoteRepository voteRepository,
-                                QuizzesRepository quizzesRepository,
-                                UserRepository userRepository) {
+                                 QuizzesRepository quizzesRepository,
+                                 UserRepository userRepository) {
         this.voteRepository = voteRepository;
         this.quizzesRepository = quizzesRepository;
         this.userRepository = userRepository;
@@ -49,19 +48,18 @@ public class ModerationServiceImpl implements ModerationService {
         if (existingVoteOpt.isPresent()) {
             vote = existingVoteOpt.get();
 
-            // если ментор меняет голос, нужно скорректировать старый счётчик
             if (vote.getVoteType() != voteRequest.getVoteType()) {
-                if (vote.getVoteType().name().equals("APPROVE")) {
-                    quiz.setApprovalsCount(quiz.getApprovalsCount() - 1);
-                } else if (vote.getVoteType().name().equals("REJECT")) {
-                    quiz.setRejectsCount(quiz.getRejectsCount() - 1);
+                if (vote.getVoteType() == VoteType.APPROVE) {
+                    quiz.setApprovalsCount(Math.max(0, quiz.getApprovalsCount() - 1));
+                } else if (vote.getVoteType() == VoteType.REJECT) {
+                    quiz.setRejectsCount(Math.max(0, quiz.getRejectsCount() - 1));
                 }
 
                 vote.setVoteType(voteRequest.getVoteType());
 
-                if (voteRequest.getVoteType().name().equals("APPROVE")) {
+                if (voteRequest.getVoteType() == VoteType.APPROVE) {
                     quiz.setApprovalsCount(quiz.getApprovalsCount() + 1);
-                } else if (voteRequest.getVoteType().name().equals("REJECT")) {
+                } else if (voteRequest.getVoteType() == VoteType.REJECT) {
                     quiz.setRejectsCount(quiz.getRejectsCount() + 1);
                 }
             }
@@ -71,18 +69,19 @@ public class ModerationServiceImpl implements ModerationService {
             vote.setMentor(mentor);
             vote.setVoteType(voteRequest.getVoteType());
 
-            if (voteRequest.getVoteType().name().equals("APPROVE")) {
+            if (voteRequest.getVoteType() == VoteType.APPROVE) {
                 quiz.setApprovalsCount(quiz.getApprovalsCount() + 1);
-            } else if (voteRequest.getVoteType().name().equals("REJECT")) {
+            } else if (voteRequest.getVoteType() == VoteType.REJECT) {
                 quiz.setRejectsCount(quiz.getRejectsCount() + 1);
             }
         }
 
+        vote.setComment(voteRequest.getComment() == null ? null : voteRequest.getComment().trim());
+
         int totalVotes = quiz.getApprovalsCount() + quiz.getRejectsCount();
 
-        if (totalVotes >= 3) {
+        if (totalVotes >= quiz.getRequiredVotes()) {
             double approvalPercent = (quiz.getApprovalsCount() * 100.0) / totalVotes;
-
             if (approvalPercent >= 60.0) {
                 quiz.setStatus(TestStatus.APPROVED);
             } else {

@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 
 @ControllerAdvice
 public class GlobalException {
@@ -27,9 +28,17 @@ public class GlobalException {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(new ErrorResponseDto(HttpStatus.FORBIDDEN.value(), ex.getMessage()));
     }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponseDto> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(new ErrorResponseDto(HttpStatus.METHOD_NOT_ALLOWED.value(), ex.getMessage()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDto> handleGeneric(Exception ex) {
+        ex.printStackTrace();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponseDto(500, "Internal Server Error"));
+                .body(new ErrorResponseDto(500, ex.getMessage()));
     }
 }
