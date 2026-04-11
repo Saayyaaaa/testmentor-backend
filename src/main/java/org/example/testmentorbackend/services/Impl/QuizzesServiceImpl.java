@@ -24,10 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.example.testmentorbackend.dto.AiAppendQuestionsRequestDto;
 import org.example.testmentorbackend.services.AiQuizService;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import org.hibernate.Hibernate;
+import java.util.*;
 
 @Service
 public class QuizzesServiceImpl implements QuizzesService {
@@ -163,6 +161,10 @@ public class QuizzesServiceImpl implements QuizzesService {
         Quizzes quiz = quizzesRepository.findDetailsById(quizId)
                 .orElseThrow(() -> new NotFoundException("Quiz not found: " + quizId));
 
+        for (Questions question : quiz.getQuestions()) {
+            Hibernate.initialize(question.getOptions());
+        }
+
         Optional<Vote> myVote = voteRepository.findByQuiz_QuizIDAndMentor_Id(quiz.getQuizID(), currentUser.getId());
 
         List<VoteCommentDto> comments = voteRepository.findAllDetailedByQuizId(quizId)
@@ -283,8 +285,9 @@ public class QuizzesServiceImpl implements QuizzesService {
     }
 
     @Override
+    @Transactional
     public Quizzes updateQuizMeta(Long quizId, String username, boolean isAdmin, QuizzesDto dto) {
-        Quizzes quiz = quizzesRepository.findById(quizId)
+        Quizzes quiz = quizzesRepository.findDetailsById(quizId)
                 .orElseThrow(() -> new NotFoundException("Quiz not found: " + quizId));
 
         boolean isAuthor = quiz.getAuthor() != null && username.equals(quiz.getAuthor().getName());
@@ -300,7 +303,167 @@ public class QuizzesServiceImpl implements QuizzesService {
             quiz.setDescription(dto.getDescription().trim());
         }
 
+        if (dto.getTimeLimit() != null) {
+            quiz.setTimeLimit(dto.getTimeLimit());
+        }
+
+        if (dto.getRequiredVotes() != null && dto.getRequiredVotes() > 0) {
+            quiz.setRequiredVotes(dto.getRequiredVotes());
+        }
+
+        boolean questionsChanged = false;
+
+        if (dto.getQuestions() != null) {
+            questionsChanged = syncQuestions(quiz, dto.getQuestions());
+        }
+
+        if (questionsChanged) {
+            voteRepository.deleteByQuiz_QuizID(quizId);
+            quiz.setApprovalsCount(0);
+            quiz.setRejectsCount(0);
+            quiz.setStatus(TestStatus.PENDING);
+        }
+
         return quizzesRepository.save(quiz);
+    }
+
+    private boolean syncQuestions(Quizzes quiz, List<QuestionDto> incomingQuestions) {
+        boolean changed = false;
+
+        Map<Long, Questions> existingQuestionsById = new HashMap<>();
+        for (Questions q : quiz.getQuestions()) {
+            if (q.getQuestionID() != null) {
+                existingQuestionsById.put(q.getQuestionID(), q);
+            }
+        }
+
+        Set<Long> incomingQuestionIds = new HashSet<>();
+        for (QuestionDto dto : incomingQuestions) {
+            if (dto.getQuestionID() != null) {
+                incomingQuestionIds.add(dto.getQuestionID());
+            }
+        }
+
+        Iterator<Questions> questionIterator = quiz.getQuestions().iterator();
+        while (questionIterator.hasNext()) {
+            Questions existing = questionIterator.next();
+            Long existingId = existing.getQuestionID();
+
+            if (existingId != null && !incomingQuestionIds.contains(existingId)) {
+                questionIterator.remove();
+                existing.setQuizzes(null);
+                changed = true;
+            }
+        }
+
+        for (QuestionDto dto : incomingQuestions) {
+            Questions target;
+
+            if (dto.getQuestionID() != null && existingQuestionsById.containsKey(dto.getQuestionID())) {
+                target = existingQuestionsById.get(dto.getQuestionID());
+
+                if (!Objects.equals(target.getQuestionText(), dto.getQuestionText())) {
+                    target.setQuestionText(dto.getQuestionText());
+                    changed = true;
+                }
+
+                if (!Objects.equals(target.getQuestionType(), dto.getQuestionType())) {
+                    target.setQuestionType(dto.getQuestionType());
+                    changed = true;
+                }
+
+                if (!Objects.equals(target.getAiAnswer(), dto.getAiAnswer())) {
+                    target.setAiAnswer(dto.getAiAnswer());
+                    changed = true;
+                }
+
+                if (syncOptions(target, dto.getOptions())) {
+                    changed = true;
+                }
+
+            } else {
+                target = new Questions();
+                target.setQuestionText(dto.getQuestionText());
+                target.setQuestionType(dto.getQuestionType());
+                target.setAiAnswer(dto.getAiAnswer());
+                target.setQuizzes(quiz);
+
+                if (dto.getOptions() != null) {
+                    for (OptionDto optionDto : dto.getOptions()) {
+                        Options option = new Options();
+                        option.setOptionText(optionDto.getOptionText());
+                        option.setCorrect(optionDto.isCorrect());
+                        option.setQuestions(target);
+                        target.getOptions().add(option);
+                    }
+                }
+
+                quiz.getQuestions().add(target);
+                changed = true;
+            }
+        }
+
+        return changed;
+    }
+
+    private boolean syncOptions(Questions question, List<OptionDto> incomingOptions) {
+        boolean changed = false;
+
+        List<OptionDto> safeIncomingOptions = incomingOptions != null ? incomingOptions : new ArrayList<>();
+
+        Map<Long, Options> existingOptionsById = new HashMap<>();
+        for (Options o : question.getOptions()) {
+            if (o.getOptionID() != null) {
+                existingOptionsById.put(o.getOptionID(), o);
+            }
+        }
+
+        Set<Long> incomingOptionIds = new HashSet<>();
+        for (OptionDto dto : safeIncomingOptions) {
+            if (dto.getOptionID() != null) {
+                incomingOptionIds.add(dto.getOptionID());
+            }
+        }
+
+        Iterator<Options> optionIterator = question.getOptions().iterator();
+        while (optionIterator.hasNext()) {
+            Options existing = optionIterator.next();
+            Long existingId = existing.getOptionID();
+
+            if (existingId != null && !incomingOptionIds.contains(existingId)) {
+                optionIterator.remove();
+                existing.setQuestions(null);
+                changed = true;
+            }
+        }
+
+        for (OptionDto dto : safeIncomingOptions) {
+            Options target;
+
+            if (dto.getOptionID() != null && existingOptionsById.containsKey(dto.getOptionID())) {
+                target = existingOptionsById.get(dto.getOptionID());
+
+                if (!Objects.equals(target.getOptionText(), dto.getOptionText())) {
+                    target.setOptionText(dto.getOptionText());
+                    changed = true;
+                }
+
+                if (target.isCorrect() != dto.isCorrect()) {
+                    target.setCorrect(dto.isCorrect());
+                    changed = true;
+                }
+
+            } else {
+                target = new Options();
+                target.setOptionText(dto.getOptionText());
+                target.setCorrect(dto.isCorrect());
+                target.setQuestions(question);
+                question.getOptions().add(target);
+                changed = true;
+            }
+        }
+
+        return changed;
     }
 
     @Override

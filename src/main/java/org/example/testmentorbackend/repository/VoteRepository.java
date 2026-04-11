@@ -23,4 +23,6 @@ public interface VoteRepository extends JpaRepository<Vote, Long> {
     List<Vote> findAllByQuiz_QuizIDOrderByCreatedAtDesc(Long quizId);
 
     long countByQuiz_QuizID(Long quizId);
+
+    void deleteByQuiz_QuizID(Long quizId);
 }
